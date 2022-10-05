@@ -4,21 +4,21 @@
     "parameters": {
         "storageAccountName": {
             "type": "string",
-            "defaultValue": "stgghchlgalexmang",
+            "defaultValue": "githubactionmowie",
             "metadata": {
                 "description": "description"
             }
         },
         "serverFarmName": {
             "type": "string",
-            "defaultValue": "plan-ghchlg-we-dev",
+            "defaultValue": "plan-githubclg-mowie",
             "metadata": {
                 "description": "description"
             }
         },
         "functionName": {
             "type": "string",
-            "defaultValue": "func-ghchlg-we-dev",
+            "defaultValue": "func-githubclg-mowie",
             "metadata": {
                 "description": "description"
             }
