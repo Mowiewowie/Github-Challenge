@@ -1,2 +1,2 @@
 # Github-Challenge
-trigger push 1
+trigger push
