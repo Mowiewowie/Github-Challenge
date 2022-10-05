@@ -1,4 +1,9 @@
-on: [push]
+on:
+  pull_request:
+    types:
+      - opened
+    branches:
+      - 'dev-test/**'
 name: Azure ARM
 jobs:
   build-and-deploy:
