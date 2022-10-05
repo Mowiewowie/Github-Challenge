@@ -1,151 +1,104 @@
 {
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
-    "metadata": {
-        "_generator": {
-            "name": "bicep",
-            "version": "0.5.6.12127",
-            "templateHash": "10848576439099634716"
-        }
-    },
     "parameters": {
-        "appName": {
+        "storageAccountName": {
             "type": "string",
-            "defaultValue": "[format('fnapp{0}', uniqueString(resourceGroup().id))]",
+            "defaultValue": "stgghchlgalexmang",
             "metadata": {
-                "description": "The name of the function app that you wish to create."
+                "description": "description"
             }
         },
-        "storageAccountType": {
+        "serverFarmName": {
             "type": "string",
-            "defaultValue": "Standard_LRS",
-            "allowedValues": [
-                "Standard_LRS",
-                "Standard_GRS",
-                "Standard_RAGRS"
-            ],
+            "defaultValue": "plan-ghchlg-we-dev",
             "metadata": {
-                "description": "Storage Account type"
+                "description": "description"
             }
         },
-        "location": {
+        "functionName": {
             "type": "string",
-            "defaultValue": "[resourceGroup().location]",
+            "defaultValue": "func-ghchlg-we-dev",
             "metadata": {
-                "description": "Location for all resources."
-            }
-        },
-        "appInsightsLocation": {
-            "type": "string",
-            "metadata": {
-                "description": "Location for Application Insights"
-            }
-        },
-        "runtime": {
-            "type": "string",
-            "defaultValue": "node",
-            "allowedValues": [
-                "node",
-                "dotnet",
-                "java"
-            ],
-            "metadata": {
-                "description": "The language worker runtime to load in the function app."
+                "description": "description"
             }
         }
     },
-    "variables": {
-        "functionAppName": "[parameters('appName')]",
-        "hostingPlanName": "[parameters('appName')]",
-        "applicationInsightsName": "[parameters('appName')]",
-        "storageAccountName": "[format('{0}azfunctions', uniqueString(resourceGroup().id))]",
-        "functionWorkerRuntime": "[parameters('runtime')]"
-    },
+    "functions": [],
+    "variables": {},
     "resources": [
         {
+            "name": "[parameters('storageAccountName')]",
             "type": "Microsoft.Storage/storageAccounts",
-            "apiVersion": "2021-08-01",
-            "name": "[variables('storageAccountName')]",
-            "location": "[parameters('location')]",
-            "sku": {
-                "name": "[parameters('storageAccountType')]"
+            "apiVersion": "2021-04-01",
+            "tags": {
+                "displayName": "[parameters('storageAccountName')]"
             },
-            "kind": "Storage"
+            "location": "[resourceGroup().location]",
+            "kind": "StorageV2",
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            }
         },
         {
+            "name": "[parameters('serverFarmName')]",
             "type": "Microsoft.Web/serverfarms",
-            "apiVersion": "2021-03-01",
-            "name": "[variables('hostingPlanName')]",
-            "location": "[parameters('location')]",
+            "apiVersion": "2020-12-01",
+            "location": "[resourceGroup().location]",
             "sku": {
                 "name": "Y1",
-                "tier": "Dynamic"
-            },
-            "properties": {}
-        },
-        {
-            "type": "Microsoft.Web/sites",
-            "apiVersion": "2021-03-01",
-            "name": "[variables('functionAppName')]",
-            "location": "[parameters('location')]",
-            "kind": "functionapp",
-            "identity": {
-                "type": "SystemAssigned"
+                "tier": "Dynamic",
+                "size": "Y1",
+                "family": "Y"
             },
             "properties": {
-                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+                "name": "[parameters('serverFarmName')]",
+                "computeMode": "Dynamic"
+            }
+        },
+        {
+            "name": "[parameters('functionName')]",
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2020-12-01",
+            "location": "[resourceGroup().location]",
+            "kind": "functionapp",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', parameters('serverFarmName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+            ],
+            "properties": {
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('serverFarmName'))]",
                 "siteConfig": {
                     "appSettings": [
                         {
+                            "name": "AzureWebJobsDashboard",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')),'2015-05-01-preview').key1)]"
+                        },
+                        {
                             "name": "AzureWebJobsStorage",
-                            "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', variables('storageAccountName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2021-08-01').keys[0].value)]"
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')),'2015-05-01-preview').key1)]"
                         },
                         {
                             "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
-                            "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', variables('storageAccountName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2021-08-01').keys[0].value)]"
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')),'2015-05-01-preview').key1)]"
                         },
                         {
                             "name": "WEBSITE_CONTENTSHARE",
-                            "value": "[toLower(variables('functionAppName'))]"
+                            "value": "[toLower(parameters('functionName'))]"
                         },
                         {
                             "name": "FUNCTIONS_EXTENSION_VERSION",
                             "value": "~2"
                         },
                         {
-                            "name": "WEBSITE_NODE_DEFAULT_VERSION",
-                            "value": "~10"
-                        },
-                        {
-                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
-                            "value": "[reference(resourceId('Microsoft.Insights/components', variables('applicationInsightsName'))).InstrumentationKey]"
-                        },
-                        {
                             "name": "FUNCTIONS_WORKER_RUNTIME",
-                            "value": "[variables('functionWorkerRuntime')]"
+                            "value": "dotnet"
                         }
-                    ],
-                    "ftpsState": "FtpsOnly",
-                    "minTlsVersion": "1.2"
-                },
-                "httpsOnly": true
-            },
-            "dependsOn": [
-                "[resourceId('Microsoft.Insights/components', variables('applicationInsightsName'))]",
-                "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
-                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
-            ]
-        },
-        {
-            "type": "Microsoft.Insights/components",
-            "apiVersion": "2020-02-02",
-            "name": "[variables('applicationInsightsName')]",
-            "location": "[parameters('appInsightsLocation')]",
-            "kind": "web",
-            "properties": {
-                "Application_Type": "web",
-                "Request_Source": "rest"
+                    ]
+                }
             }
         }
-    ]
+    ],
+    "outputs": {}
 }
